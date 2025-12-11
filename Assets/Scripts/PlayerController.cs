@@ -5,49 +5,60 @@ public class PlayerController : MonoBehaviour
 {
     [Header("Movement")]
     public float forwardSpeed = 14f;
-    public float laneDistance = 10f; 
+
+    // Your map is sideways, so lanes move on Z not X
+    public float laneDistance = 10f;
     public float laneSwitchSpeed = 12f;
-    private int currentLane = 0; // -1 = left, 0 = mid, +1 = right
-    private Vector3 targetPosition;
+
+    // Middle lane world position (sideways map)
+    public float laneOffsetZ = 0f;
+
+    private int currentLane = 0;
+    private CharacterController cc;
+    private Animator anim;
 
     [Header("Jump")]
-    public float jumpForce = 7f;
-    private bool isGrounded = true;
+    public float jumpHeight = 5f;
+    public float gravity = -30f;
+    private float verticalVelocity;
 
     [Header("Roll")]
     public float rollDuration = 0.7f;
     private bool isRolling = false;
 
-    private Rigidbody rb;
-    private Animator anim;
-
     void Start()
     {
-        rb = GetComponent<Rigidbody>();
-        anim = GetComponent<Animator>();
+        cc = GetComponent<CharacterController>();
+        anim = GetComponentInChildren<Animator>();
 
-        // Start immediately with Run animation
         anim.Play("Run");
+
+        // Start player at the middle lane
+        Vector3 startPos = transform.position;
+        startPos.z = laneOffsetZ;
+        transform.position = startPos;
     }
 
     void Update()
     {
-        // Auto-forward running
-        rb.linearVelocity = new Vector3(rb.linearVelocity.x, rb.linearVelocity.y, forwardSpeed);
+        Vector3 move = Vector3.zero;
+
+        // Your world is rotated → forward = LEFT direction
+        move += Vector3.left * forwardSpeed;
 
         HandleLaneInput();
-        SmoothLaneMovement();
+        ApplyLaneMovement(ref move);
+        ApplyGravity(ref move);
 
-        if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
+        cc.Move(move * Time.deltaTime);
+
+        if (Input.GetKeyDown(KeyCode.Space) && cc.isGrounded)
             Jump();
 
-        if (Input.GetKeyDown(KeyCode.LeftControl) && isGrounded && !isRolling)
+        if (Input.GetKeyDown(KeyCode.LeftControl) && cc.isGrounded && !isRolling)
             StartCoroutine(Roll());
     }
 
-    // --------------------------------------------------
-    // LANE MOVEMENT SYSTEM
-    // --------------------------------------------------
     void HandleLaneInput()
     {
         if (Input.GetKeyDown(KeyCode.RightArrow) && currentLane < 1)
@@ -55,64 +66,49 @@ public class PlayerController : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.LeftArrow) && currentLane > -1)
             currentLane--;
-
-        targetPosition = new Vector3(currentLane * laneDistance, transform.position.y, transform.position.z);
     }
 
-    void SmoothLaneMovement()
+    void ApplyLaneMovement(ref Vector3 move)
     {
-        Vector3 newPos = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * laneSwitchSpeed);
-        transform.position = newPos;
+        // Lanes move on Z axis in your sideways map
+        float desiredZ = laneOffsetZ + currentLane * laneDistance;
+        float diff = desiredZ - transform.position.z;
+
+        move.z = diff * laneSwitchSpeed;
     }
 
-    // --------------------------------------------------
-    // JUMP
-    // --------------------------------------------------
+    void ApplyGravity(ref Vector3 move)
+    {
+        if (cc.isGrounded)
+        {
+            if (verticalVelocity < 0)
+                verticalVelocity = -1f;
+        }
+        else
+        {
+            verticalVelocity += gravity * Time.deltaTime;
+        }
+
+        move.y = verticalVelocity;
+    }
+
     void Jump()
     {
-        isGrounded = false;
-
+        verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
         anim.SetTrigger("Jump");
-        anim.SetBool("isJumping", true);
-
-        rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
     }
 
-    private void OnCollisionEnter(Collision other)
-    {
-        if (other.gameObject.CompareTag("Ground"))
-        {
-            isGrounded = true;
-            anim.SetBool("isJumping", false);
-        }
-    }
-
-    // --------------------------------------------------
-    // ROLL
-    // --------------------------------------------------
     IEnumerator Roll()
     {
         isRolling = true;
         anim.SetTrigger("Roll");
-        anim.SetBool("isRolling", true);
-
-        // CapsuleCollider col = GetComponent<CapsuleCollider>();
-        // col.height = 1f;
-
         yield return new WaitForSeconds(rollDuration);
-
-        anim.SetBool("isRolling", false);
         isRolling = false;
-
-        // col.height = 2f;
     }
 
-    // --------------------------------------------------
-    // DEATH
-    // --------------------------------------------------
     public void Die()
     {
         anim.SetTrigger("Die");
-        forwardSpeed = 0;
+        forwardSpeed = 0f;
     }
 }
