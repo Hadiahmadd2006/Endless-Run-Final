@@ -3,33 +3,33 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     [Header("Movement")]
-    public float forwardSpeed = 15f;      // Constant +X speed
-    public float laneOffset = 10f;        // Distance between lanes on Z
+    public float forwardSpeed = 15f;      // Constant -Z speed
+    public float laneOffset = 2f;         // Distance between lanes on X
     public float laneChangeSpeed = 10f;   // How fast to slide between lanes
     public float jumpForce = 10f;         // Upwards impulse
-
-    [Header("Grounding")]
-    public float groundCheckDistance = 1.2f;
+    public float groundCheckDistance = 1.5f;
+    public float minYClamp = -5f;         // Safety floor
 
     [Header("Animation Names")]
     public string runStateName = "Run";
     public string jumpTriggerName = "Jump";
     public string dieTriggerName = "Die";
-    public string rollTriggerName = "Roll";
 
     private Rigidbody rb;
     private Animator anim;
-    private int lane = 0;         // -1 left, 0 middle, +1 right (on Z)
-    private float baseLaneZ;      // Z position of the middle lane at start
-    private float baseY;          // Y position to stick to when grounded
+    private int lane = 0;         // -1 left, 0 middle, +1 right (on X)
+    private float baseLaneX;      // X position of the middle lane at start
+    private float baseY;          // starting ground height
+    private CapsuleCollider col;
     private bool isDead = false;
+    private bool canJump = true;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         anim = GetComponent<Animator>();
-
-        baseLaneZ = transform.position.z;
+        col = GetComponent<CapsuleCollider>();
+        baseLaneX = transform.position.x;
         baseY = transform.position.y;
 
         rb.freezeRotation = true;
@@ -49,7 +49,7 @@ public class PlayerController : MonoBehaviour
     {
         if (isDead) return;
 
-        // A/Left = left lane (negative Z), D/Right = right lane (positive Z)
+        // A/Left = left lane (negative X), D/Right = right lane (positive X)
         if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.LeftArrow))
             lane = Mathf.Clamp(lane - 1, -1, 1);
 
@@ -57,17 +57,13 @@ public class PlayerController : MonoBehaviour
             lane = Mathf.Clamp(lane + 1, -1, 1);
 
         // Jump
-        if (Input.GetKeyDown(KeyCode.Space) && IsGrounded())
+        if (Input.GetKeyDown(KeyCode.Space) && canJump && IsGrounded())
         {
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
             TriggerAnim(jumpTriggerName);
+            canJump = false;
         }
 
-        // Roll (S or DownArrow)
-        if ((Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow)) && IsGrounded())
-        {
-            TriggerAnim(rollTriggerName);
-        }
     }
 
     void FixedUpdate()
@@ -77,33 +73,60 @@ public class PlayerController : MonoBehaviour
         bool grounded = IsGrounded();
 
         // Lane target and side movement
-        float targetZ = baseLaneZ + lane * laneOffset;
-        float zDelta = targetZ - rb.position.z;
-        float sideSpeed = zDelta * laneChangeSpeed;
+        float targetX = baseLaneX + lane * laneOffset;
+        float xDelta = targetX - rb.position.x;
+        float sideSpeed = xDelta * laneChangeSpeed;
 
         Vector3 velocity = rb.linearVelocity;
-        velocity.x = forwardSpeed;       // constant forward
-        velocity.z = sideSpeed;          // slide toward lane
+        velocity.z = -forwardSpeed;      // constant forward on -Z
+        velocity.x = sideSpeed;          // slide toward lane on X
 
-        // Keep Y steady when grounded (no drift until jump)
-        if (grounded && velocity.y <= 0f)
+        // Clamp to ground when grounded and falling
+        if (grounded && velocity.y < 0f)
         {
             velocity.y = 0f;
-            rb.position = new Vector3(rb.position.x, baseY, rb.position.z);
         }
 
         rb.linearVelocity = velocity;
+
+        // Safety clamp to keep player above floor
+        Vector3 pos = rb.position;
+        if (grounded && pos.y < baseY - 0.05f)
+        {
+            pos.y = baseY;
+            rb.position = pos;
+        }
+        else if (pos.y < minYClamp)
+        {
+            pos.y = baseY;
+            rb.position = pos;
+        }
 
         // Keep run looping
         if (grounded)
         {
             PlayRunIfNeeded();
+            // reset jump when touching ground
+            if (rb.linearVelocity.y <= 0f)
+            {
+                canJump = true;
+            }
         }
     }
 
     bool IsGrounded()
     {
-        return Physics.Raycast(transform.position, Vector3.down, groundCheckDistance);
+        float radius = 0.2f;
+        float castDistance = groundCheckDistance;
+
+        if (col != null)
+        {
+            radius = Mathf.Max(0.05f, col.radius * 0.9f);
+            castDistance = Mathf.Max(groundCheckDistance, (col.height * 0.5f) - col.radius + 0.1f);
+        }
+
+        Vector3 origin = transform.position + Vector3.up * 0.05f;
+        return Physics.SphereCast(origin, radius, Vector3.down, out _, castDistance);
     }
 
     void PlayRunIfNeeded()
@@ -120,14 +143,6 @@ public class PlayerController : MonoBehaviour
         if (anim != null && !string.IsNullOrEmpty(triggerName))
         {
             anim.SetTrigger(triggerName);
-        }
-    }
-
-    private void OnTriggerEnter(Collider other)
-    {
-        if (other.CompareTag("Train"))
-        {
-            Die();
         }
     }
 

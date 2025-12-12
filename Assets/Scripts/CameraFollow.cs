@@ -4,10 +4,19 @@ using UnityEngine;
 public class CameraFollow : MonoBehaviour
 {
     public Transform target;
-    public Vector3 offset = new Vector3(-10f, 6f, 0f); // behind (x-), above (y+), centered on z
     public float smoothTime = 0.15f;
 
+    private Vector3 offset;
     private Vector3 velocity = Vector3.zero;
+
+    void Start()
+    {
+        if (target != null)
+        {
+            // Use the starting relative position so the camera stays where you placed it.
+            offset = transform.position - target.position;
+        }
+    }
 
     void LateUpdate()
     {
