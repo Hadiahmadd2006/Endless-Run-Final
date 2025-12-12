@@ -1,114 +1,141 @@
-using System.Collections;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
     [Header("Movement")]
-    public float forwardSpeed = 14f;
+    public float forwardSpeed = 15f;      // Constant +X speed
+    public float laneOffset = 10f;        // Distance between lanes on Z
+    public float laneChangeSpeed = 10f;   // How fast to slide between lanes
+    public float jumpForce = 10f;         // Upwards impulse
 
-    // Your map is sideways, so lanes move on Z not X
-    public float laneDistance = 10f;
-    public float laneSwitchSpeed = 12f;
+    [Header("Grounding")]
+    public float groundCheckDistance = 1.2f;
 
-    // Middle lane world position (sideways map)
-    public float laneOffsetZ = 0f;
+    [Header("Animation Names")]
+    public string runStateName = "Run";
+    public string jumpTriggerName = "Jump";
+    public string dieTriggerName = "Die";
+    public string rollTriggerName = "Roll";
 
-    private int currentLane = 0;
-    private CharacterController cc;
+    private Rigidbody rb;
     private Animator anim;
-
-    [Header("Jump")]
-    public float jumpHeight = 5f;
-    public float gravity = -30f;
-    private float verticalVelocity;
-
-    [Header("Roll")]
-    public float rollDuration = 0.7f;
-    private bool isRolling = false;
+    private int lane = 0;         // -1 left, 0 middle, +1 right (on Z)
+    private float baseLaneZ;      // Z position of the middle lane at start
+    private float baseY;          // Y position to stick to when grounded
+    private bool isDead = false;
 
     void Start()
     {
-        cc = GetComponent<CharacterController>();
-        anim = GetComponentInChildren<Animator>();
+        rb = GetComponent<Rigidbody>();
+        anim = GetComponent<Animator>();
 
-        anim.Play("Run");
+        baseLaneZ = transform.position.z;
+        baseY = transform.position.y;
 
-        // Start player at the middle lane
-        Vector3 startPos = transform.position;
-        startPos.z = laneOffsetZ;
-        transform.position = startPos;
+        rb.freezeRotation = true;
+        rb.useGravity = true;
+
+        if (anim != null)
+        {
+            anim.applyRootMotion = false;
+            if (!string.IsNullOrEmpty(runStateName))
+            {
+                anim.CrossFade(runStateName, 0.05f);
+            }
+        }
     }
 
     void Update()
     {
-        Vector3 move = Vector3.zero;
+        if (isDead) return;
 
-        // Your world is rotated → forward = LEFT direction
-        move += Vector3.left * forwardSpeed;
+        // A/Left = left lane (negative Z), D/Right = right lane (positive Z)
+        if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.LeftArrow))
+            lane = Mathf.Clamp(lane - 1, -1, 1);
 
-        HandleLaneInput();
-        ApplyLaneMovement(ref move);
-        ApplyGravity(ref move);
+        if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.RightArrow))
+            lane = Mathf.Clamp(lane + 1, -1, 1);
 
-        cc.Move(move * Time.deltaTime);
-
-        if (Input.GetKeyDown(KeyCode.Space) && cc.isGrounded)
-            Jump();
-
-        if (Input.GetKeyDown(KeyCode.LeftControl) && cc.isGrounded && !isRolling)
-            StartCoroutine(Roll());
-    }
-
-    void HandleLaneInput()
-    {
-        if (Input.GetKeyDown(KeyCode.RightArrow) && currentLane < 1)
-            currentLane++;
-
-        if (Input.GetKeyDown(KeyCode.LeftArrow) && currentLane > -1)
-            currentLane--;
-    }
-
-    void ApplyLaneMovement(ref Vector3 move)
-    {
-        // Lanes move on Z axis in your sideways map
-        float desiredZ = laneOffsetZ + currentLane * laneDistance;
-        float diff = desiredZ - transform.position.z;
-
-        move.z = diff * laneSwitchSpeed;
-    }
-
-    void ApplyGravity(ref Vector3 move)
-    {
-        if (cc.isGrounded)
+        // Jump
+        if (Input.GetKeyDown(KeyCode.Space) && IsGrounded())
         {
-            if (verticalVelocity < 0)
-                verticalVelocity = -1f;
-        }
-        else
-        {
-            verticalVelocity += gravity * Time.deltaTime;
+            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            TriggerAnim(jumpTriggerName);
         }
 
-        move.y = verticalVelocity;
+        // Roll (S or DownArrow)
+        if ((Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow)) && IsGrounded())
+        {
+            TriggerAnim(rollTriggerName);
+        }
     }
 
-    void Jump()
+    void FixedUpdate()
     {
-        verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
-        anim.SetTrigger("Jump");
+        if (isDead) return;
+
+        bool grounded = IsGrounded();
+
+        // Lane target and side movement
+        float targetZ = baseLaneZ + lane * laneOffset;
+        float zDelta = targetZ - rb.position.z;
+        float sideSpeed = zDelta * laneChangeSpeed;
+
+        Vector3 velocity = rb.linearVelocity;
+        velocity.x = forwardSpeed;       // constant forward
+        velocity.z = sideSpeed;          // slide toward lane
+
+        // Keep Y steady when grounded (no drift until jump)
+        if (grounded && velocity.y <= 0f)
+        {
+            velocity.y = 0f;
+            rb.position = new Vector3(rb.position.x, baseY, rb.position.z);
+        }
+
+        rb.linearVelocity = velocity;
+
+        // Keep run looping
+        if (grounded)
+        {
+            PlayRunIfNeeded();
+        }
     }
 
-    IEnumerator Roll()
+    bool IsGrounded()
     {
-        isRolling = true;
-        anim.SetTrigger("Roll");
-        yield return new WaitForSeconds(rollDuration);
-        isRolling = false;
+        return Physics.Raycast(transform.position, Vector3.down, groundCheckDistance);
+    }
+
+    void PlayRunIfNeeded()
+    {
+        if (anim == null || string.IsNullOrEmpty(runStateName)) return;
+        if (!anim.GetCurrentAnimatorStateInfo(0).IsName(runStateName))
+        {
+            anim.CrossFade(runStateName, 0.05f);
+        }
+    }
+
+    void TriggerAnim(string triggerName)
+    {
+        if (anim != null && !string.IsNullOrEmpty(triggerName))
+        {
+            anim.SetTrigger(triggerName);
+        }
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Train"))
+        {
+            Die();
+        }
     }
 
     public void Die()
     {
-        anim.SetTrigger("Die");
-        forwardSpeed = 0f;
+        if (isDead) return;
+        isDead = true;
+        rb.linearVelocity = Vector3.zero;
+        TriggerAnim(dieTriggerName);
     }
 }
