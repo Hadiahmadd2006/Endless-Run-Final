@@ -30,7 +30,7 @@ public class GameManager : MonoBehaviour
     public AudioSource globalAudioSource;
 
     [Header("Debug/Flow")]
-    public bool autoStart = false;
+    public bool autoStart = true;
 
     private float coinBonusEndTime;
     private int coinBonusPoints;
@@ -97,7 +97,8 @@ public class GameManager : MonoBehaviour
         if (ended) return;
         ended = true;
         isRunning = false;
-        Time.timeScale = 0f;
+        // Keep time running so death animation can play; menu can pause later if desired.
+        Time.timeScale = 1f;
         if (gameOverPanel != null) gameOverPanel.SetActive(true);
         if (finalScoreText != null) finalScoreText.text = $"Score: {Score}";
         if (timeSurvivedText != null) timeSurvivedText.text = $"Time: {FormatTime(runTimer)}";
@@ -221,136 +222,4 @@ public class GameManager : MonoBehaviour
             globalAudioSource.volume = Mathf.Clamp01(value);
         }
     }
-}
-
-// ---- Interaction components ----
-public class Collectible : MonoBehaviour
-{
-    public CollectibleData data;
-    public AudioClip collectSfx; // optional override
-    public float rotationSpeed = 180f; // degrees per second, coins spin by default
-
-    void Awake()
-    {
-        var col = GetComponent<Collider>();
-        if (col != null) col.isTrigger = true;
-    }
-
-    void Update()
-    {
-        if (Mathf.Abs(rotationSpeed) > 0.01f)
-        {
-            transform.Rotate(Vector3.up, rotationSpeed * Time.deltaTime, Space.World);
-        }
-    }
-
-    void OnTriggerEnter(Collider other)
-    {
-        var player = other.GetComponentInParent<PlayerController>();
-        if (player == null) return;
-        HandleCollect(player);
-    }
-
-    public void HandleCollect(PlayerController player)
-    {
-        if (player == null) return;
-        int pts = data != null ? data.points : 1;
-        var gm = GameManager.Instance;
-        if (gm != null && gm.IsCoinBonusActive)
-        {
-            pts += gm.CurrentCoinBonus;
-        }
-        gm?.AddScore(pts);
-
-        if (gm != null && data != null && data.bonusChance > 0f && data.bonusDuration > 0f && data.bonusPoints != 0)
-        {
-            if (UnityEngine.Random.value < data.bonusChance)
-            {
-                gm.ActivateCoinBonus(data.bonusPoints, data.bonusDuration);
-            }
-        }
-
-        AudioClip clipToPlay = collectSfx != null ? collectSfx : (data != null ? data.pickSfx : null);
-        player.PlaySfx(clipToPlay);
-        Destroy(gameObject);
-    }
-}
-
-public class Obstacle : MonoBehaviour
-{
-    public ObstacleData data;
-
-    void Awake()
-    {
-        var col = GetComponent<Collider>();
-        if (col != null) col.isTrigger = true;
-    }
-
-    void OnTriggerEnter(Collider other)
-    {
-        var player = other.GetComponentInParent<PlayerController>();
-        if (player != null) HandleHit(player);
-    }
-
-    public void HandleHit(PlayerController player)
-    {
-        if (player == null) return;
-        player.PlaySfx(data != null ? data.hitSfx : null);
-        player.Die();
-    }
-}
-
-public class SimpleObstacle : MonoBehaviour
-{
-    public AudioClip hitSfx;
-
-    void OnTriggerEnter(Collider other)
-    {
-        var player = other.GetComponentInParent<PlayerController>();
-        if (player != null)
-        {
-            player.PlaySfx(hitSfx);
-            player.Die();
-        }
-    }
-}
-
-[DefaultExecutionOrder(-99)]
-public class ScoreManager : MonoBehaviour
-{
-    public static ScoreManager Instance { get; private set; }
-    public int Score => GameManager.Instance != null ? GameManager.Instance.Score : 0;
-
-    public TMP_Text scoreText;
-
-    public event Action<int> OnScoreChanged
-    {
-        add { if (GameManager.Instance != null) GameManager.Instance.OnScoreChanged += value; }
-        remove { if (GameManager.Instance != null) GameManager.Instance.OnScoreChanged -= value; }
-    }
-
-    void Awake()
-    {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-        Instance = this;
-
-        if (GameManager.Instance == null)
-        {
-            gameObject.AddComponent<GameManager>();
-        }
-
-        if (GameManager.Instance.scoreText == null && scoreText != null)
-        {
-            GameManager.Instance.scoreText = scoreText;
-        }
-
-        DontDestroyOnLoad(gameObject);
-    }
-
-    public void AddScore(int amount) => GameManager.Instance?.AddScore(amount);
-    public void ResetScore() => GameManager.Instance?.ResetScore();
 }

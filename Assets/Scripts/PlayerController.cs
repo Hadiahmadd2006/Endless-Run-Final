@@ -14,6 +14,7 @@ public class PlayerController : MonoBehaviour
     public string jumpTriggerName = "Jump";
     public string jumpStateName = "Jump";
     public string dieTriggerName = "Die";
+    public string dieStateName = "Die";
 
     private Rigidbody rb;
     private Animator anim;
@@ -30,6 +31,8 @@ public class PlayerController : MonoBehaviour
     [Header("Interaction")]
     public float interactionRadius = 0.6f;
     public LayerMask interactionMask = ~0;
+    [Header("Tag Fallback")]
+    public int taggedCollectiblePoints = 1; // used if no Collectible component is found
 
     [Header("Audio")]
     public AudioSource sfxSource;
@@ -92,11 +95,11 @@ public class PlayerController : MonoBehaviour
         float xDelta = targetX - rb.position.x;
         float sideSpeed = xDelta * laneChangeSpeed;
 
-        Vector3 velocity = rb.linearVelocity;
+        Vector3 velocity = rb.velocity;
         velocity.x = sideSpeed;
         velocity.z = 0f;          // world moves, player stays
         if (grounded && velocity.y < 0f) velocity.y = 0f;
-        rb.linearVelocity = velocity;
+        rb.velocity = velocity;
 
         // Clamp Y
         Vector3 pos = rb.position;
@@ -105,9 +108,9 @@ public class PlayerController : MonoBehaviour
             // Hard lock to baseY and disable gravity while on the ground to prevent vertical hunting.
             pos.y = baseY;
             rb.position = pos;
-            Vector3 v = rb.linearVelocity;
+            Vector3 v = rb.velocity;
             v.y = 0f;
-            rb.linearVelocity = v;
+            rb.velocity = v;
         }
         else
         {
@@ -188,9 +191,13 @@ public class PlayerController : MonoBehaviour
     {
         if (isDead) return;
         isDead = true;
-        rb.linearVelocity = Vector3.zero;
+        rb.velocity = Vector3.zero;
         TriggerAnim(dieTriggerName);
         PlaySfx(dieSfx);
+        if (anim != null && !string.IsNullOrEmpty(dieStateName))
+        {
+            anim.CrossFadeInFixedTime(dieStateName, 0.05f);
+        }
         GameManager.Instance?.OnPlayerDied();
     }
 
@@ -200,17 +207,50 @@ public class PlayerController : MonoBehaviour
         sfxSource.PlayOneShot(clip);
     }
 
+    void OnTriggerEnter(Collider other)
+    {
+        HandleTagged(other);
+    }
+
+    void OnCollisionEnter(Collision collision)
+    {
+        HandleTagged(collision.collider);
+    }
+
+    void HandleTagged(Collider col)
+    {
+        if (col == null) return;
+        if (col.CompareTag("Collectible"))
+        {
+            GameManager.Instance?.AddScore(taggedCollectiblePoints);
+            Destroy(col.attachedRigidbody != null ? col.attachedRigidbody.gameObject : col.gameObject);
+        }
+        else if (col.CompareTag("Obstacle"))
+        {
+            PlaySfx(dieSfx);
+            Die();
+        }
+    }
+
     void CheckInteractions()
     {
-        Vector3 origin = transform.position + Vector3.up * 0.5f;
-        float radius = interactionRadius;
+        Collider[] hits;
         if (col != null)
         {
-            origin = transform.position + Vector3.up * (col.height * 0.5f);
-            radius = Mathf.Max(col.radius * 1.1f, interactionRadius);
+            float radius = Mathf.Max(col.radius * 0.95f, interactionRadius);
+            float halfHeight = Mathf.Max(col.height * 0.5f - col.radius, 0f);
+            Vector3 center = transform.TransformPoint(col.center);
+            Vector3 bottom = center + Vector3.down * halfHeight;
+            Vector3 top = center + Vector3.up * halfHeight;
+            hits = Physics.OverlapCapsule(bottom, top, radius, interactionMask, QueryTriggerInteraction.Collide);
+        }
+        else
+        {
+            Vector3 origin = transform.position + Vector3.up * 0.5f;
+            float radius = interactionRadius;
+            hits = Physics.OverlapSphere(origin, radius, interactionMask, QueryTriggerInteraction.Collide);
         }
 
-        var hits = Physics.OverlapSphere(origin, radius, interactionMask, QueryTriggerInteraction.Collide);
         for (int i = 0; i < hits.Length; i++)
         {
             var h = hits[i];
@@ -221,10 +261,23 @@ public class PlayerController : MonoBehaviour
                 collectible.HandleCollect(this);
                 continue;
             }
+            else if (h.CompareTag("Collectible"))
+            {
+                GameManager.Instance?.AddScore(taggedCollectiblePoints);
+                Destroy(h.attachedRigidbody != null ? h.attachedRigidbody.gameObject : h.gameObject);
+                continue;
+            }
             var obstacle = h.GetComponentInParent<Obstacle>();
             if (obstacle != null)
             {
                 obstacle.HandleHit(this);
+                continue;
+            }
+            else if (h.CompareTag("Obstacle"))
+            {
+                PlaySfx(dieSfx);
+                Die();
+                continue;
             }
             var simple = h.GetComponentInParent<SimpleObstacle>();
             if (simple != null)
