@@ -27,6 +27,9 @@ public class PlayerController : MonoBehaviour
     private bool inJump = false;
     private bool leftGround = false;
     private float groundedTimer = 0f;
+    [Header("Interaction")]
+    public float interactionRadius = 0.6f;
+    public LayerMask interactionMask = ~0;
 
     [Header("Audio")]
     public AudioSource sfxSource;
@@ -134,6 +137,8 @@ public class PlayerController : MonoBehaviour
         {
             PlayRun();
         }
+
+        CheckInteractions();
     }
 
     void Jump()
@@ -186,11 +191,47 @@ public class PlayerController : MonoBehaviour
         rb.linearVelocity = Vector3.zero;
         TriggerAnim(dieTriggerName);
         PlaySfx(dieSfx);
+        GameManager.Instance?.OnPlayerDied();
     }
 
     public void PlaySfx(AudioClip clip)
     {
         if (clip == null || sfxSource == null) return;
         sfxSource.PlayOneShot(clip);
+    }
+
+    void CheckInteractions()
+    {
+        Vector3 origin = transform.position + Vector3.up * 0.5f;
+        float radius = interactionRadius;
+        if (col != null)
+        {
+            origin = transform.position + Vector3.up * (col.height * 0.5f);
+            radius = Mathf.Max(col.radius * 1.1f, interactionRadius);
+        }
+
+        var hits = Physics.OverlapSphere(origin, radius, interactionMask, QueryTriggerInteraction.Collide);
+        for (int i = 0; i < hits.Length; i++)
+        {
+            var h = hits[i];
+            if (h == null) continue;
+            var collectible = h.GetComponentInParent<Collectible>();
+            if (collectible != null)
+            {
+                collectible.HandleCollect(this);
+                continue;
+            }
+            var obstacle = h.GetComponentInParent<Obstacle>();
+            if (obstacle != null)
+            {
+                obstacle.HandleHit(this);
+            }
+            var simple = h.GetComponentInParent<SimpleObstacle>();
+            if (simple != null)
+            {
+                PlaySfx(simple.hitSfx);
+                Die();
+            }
+        }
     }
 }
