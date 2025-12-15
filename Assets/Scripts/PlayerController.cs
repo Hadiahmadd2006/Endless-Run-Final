@@ -95,11 +95,11 @@ public class PlayerController : MonoBehaviour
         float xDelta = targetX - rb.position.x;
         float sideSpeed = xDelta * laneChangeSpeed;
 
-        Vector3 velocity = rb.velocity;
+        Vector3 velocity = rb.linearVelocity;
         velocity.x = sideSpeed;
         velocity.z = 0f;          // world moves, player stays
         if (grounded && velocity.y < 0f) velocity.y = 0f;
-        rb.velocity = velocity;
+        rb.linearVelocity = velocity;
 
         // Clamp Y
         Vector3 pos = rb.position;
@@ -108,9 +108,9 @@ public class PlayerController : MonoBehaviour
             // Hard lock to baseY and disable gravity while on the ground to prevent vertical hunting.
             pos.y = baseY;
             rb.position = pos;
-            Vector3 v = rb.velocity;
+            Vector3 v = rb.linearVelocity;
             v.y = 0f;
-            rb.velocity = v;
+            rb.linearVelocity = v;
         }
         else
         {
@@ -191,7 +191,7 @@ public class PlayerController : MonoBehaviour
     {
         if (isDead) return;
         isDead = true;
-        rb.velocity = Vector3.zero;
+        rb.linearVelocity = Vector3.zero;
         TriggerAnim(dieTriggerName);
         PlaySfx(dieSfx);
         if (anim != null && !string.IsNullOrEmpty(dieStateName))
