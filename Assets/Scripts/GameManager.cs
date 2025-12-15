@@ -26,9 +26,6 @@ public class GameManager : MonoBehaviour
     public GameObject gameOverPanel;
     public GameObject hudPanel;
 
-    [Header("Audio")]
-    public AudioSource globalAudioSource;
-
     [Header("Debug/Flow")]
     public bool autoStart = true;
 
@@ -97,9 +94,7 @@ public class GameManager : MonoBehaviour
         if (ended) return;
         ended = true;
         isRunning = false;
-        // Keep time running so death animation can play; menu can pause later if desired.
-        Time.timeScale = 1f;
-        if (gameOverPanel != null) gameOverPanel.SetActive(true);
+        ShowOnlyPanel(gameOverPanel);
         if (finalScoreText != null) finalScoreText.text = $"Score: {Score}";
         if (timeSurvivedText != null) timeSurvivedText.text = $"Time: {FormatTime(runTimer)}";
     }
@@ -152,14 +147,9 @@ public class GameManager : MonoBehaviour
     // ---- UI Hooks ----
     public void ShowMainMenu()
     {
-        Time.timeScale = 0f;
         isRunning = false;
         isPaused = false;
-        if (mainMenuPanel != null) mainMenuPanel.SetActive(true);
-        if (descriptionPanel != null) descriptionPanel.SetActive(false);
-        if (pauseMenuPanel != null) pauseMenuPanel.SetActive(false);
-        if (gameOverPanel != null) gameOverPanel.SetActive(false);
-        if (hudPanel != null) hudPanel.SetActive(false);
+        ShowOnlyPanel(mainMenuPanel);
     }
 
     public void StartGame()
@@ -170,33 +160,35 @@ public class GameManager : MonoBehaviour
         ended = false;
         isPaused = false;
         isRunning = true;
-        Time.timeScale = 1f;
-        if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
-        if (descriptionPanel != null) descriptionPanel.SetActive(false);
-        if (pauseMenuPanel != null) pauseMenuPanel.SetActive(false);
-        if (gameOverPanel != null) gameOverPanel.SetActive(false);
-        if (hudPanel != null) hudPanel.SetActive(true);
+        ShowOnlyPanel(hudPanel);
     }
 
     public void ShowDescription(bool show)
     {
-        if (descriptionPanel != null) descriptionPanel.SetActive(show);
+        if (show)
+        {
+            isRunning = false;
+            isPaused = true;
+            ShowOnlyPanel(descriptionPanel);
+        }
+        else
+        {
+            ShowMainMenu();
+        }
     }
 
     public void PauseGame()
     {
         if (!isRunning || ended) return;
         isPaused = true;
-        Time.timeScale = 0f;
-        if (pauseMenuPanel != null) pauseMenuPanel.SetActive(true);
+        ShowOnlyPanel(pauseMenuPanel);
     }
 
     public void ResumeGame()
     {
         if (!isRunning || ended) return;
         isPaused = false;
-        Time.timeScale = 1f;
-        if (pauseMenuPanel != null) pauseMenuPanel.SetActive(false);
+        ShowOnlyPanel(hudPanel);
     }
 
     public void RestartGame()
@@ -214,12 +206,15 @@ public class GameManager : MonoBehaviour
         Application.Quit();
     }
 
-    public void SetVolume(float value)
+    void ShowOnlyPanel(GameObject panelToShow)
     {
-        AudioListener.volume = Mathf.Clamp01(value);
-        if (globalAudioSource != null)
-        {
-            globalAudioSource.volume = Mathf.Clamp01(value);
-        }
+        if (mainMenuPanel != null) mainMenuPanel.SetActive(panelToShow == mainMenuPanel);
+        if (descriptionPanel != null) descriptionPanel.SetActive(panelToShow == descriptionPanel);
+        if (pauseMenuPanel != null) pauseMenuPanel.SetActive(panelToShow == pauseMenuPanel);
+        if (gameOverPanel != null) gameOverPanel.SetActive(panelToShow == gameOverPanel);
+        if (hudPanel != null) hudPanel.SetActive(panelToShow == hudPanel);
+
+        bool hudVisible = panelToShow == hudPanel;
+        Time.timeScale = hudVisible ? 1f : 0f;
     }
 }
