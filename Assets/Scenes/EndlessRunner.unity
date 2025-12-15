@@ -346,7 +346,6 @@ MonoBehaviour:
   scrollSpeed: 15
   moveDirection: {x: 0, y: 0, z: 1}
   despawnBehindPlayer: 20
-  despawnAtZ: 80
 --- !u!4 &387393195
 Transform:
   m_ObjectHideFlags: 0
@@ -994,6 +993,7 @@ MonoBehaviour:
   segmentLength: 100
   triggerOffset: 10
   recycleBuffer: -420
+<<<<<<< HEAD
 --- !u!1 &1027936488
 GameObject:
   m_ObjectHideFlags: 0
@@ -1175,11 +1175,14 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
+=======
+>>>>>>> parent of 726bddd (Added game manager script to handle collectibles, obstacles and UI)
 --- !u!4 &1173736434 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 9222065738425870839, guid: 6c810a47789b95342832be42e36af68c, type: 3}
   m_PrefabInstance: {fileID: 631031416}
   m_PrefabAsset: {fileID: 0}
+<<<<<<< HEAD
 --- !u!1 &1202687226
 GameObject:
   m_ObjectHideFlags: 0
@@ -1211,6 +1214,8 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+=======
+>>>>>>> parent of 726bddd (Added game manager script to handle collectibles, obstacles and UI)
 --- !u!1 &1328591163
 GameObject:
   m_ObjectHideFlags: 0
@@ -1366,10 +1371,6 @@ MonoBehaviour:
   jumpTriggerName: Jump
   jumpStateName: Jump
   dieTriggerName: Die
-  interactionRadius: 0.6
-  interactionMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
   sfxSource: {fileID: 0}
   jumpSfx: {fileID: 0}
   dieSfx: {fileID: 0}
@@ -1582,6 +1583,7 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1515813946}
   m_Mesh: {fileID: -5743921223933707352, guid: 6c810a47789b95342832be42e36af68c, type: 3}
+<<<<<<< HEAD
 --- !u!1 &2000206109
 GameObject:
   m_ObjectHideFlags: 0
@@ -1718,6 +1720,8 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2000206109}
   m_CullTransparentMesh: 1
+=======
+>>>>>>> parent of 726bddd (Added game manager script to handle collectibles, obstacles and UI)
 --- !u!1 &2010661928
 GameObject:
   m_ObjectHideFlags: 0
@@ -2130,7 +2134,10 @@ SceneRoots:
   - {fileID: 631031416}
   - {fileID: 512591906}
   - {fileID: 387393195}
+<<<<<<< HEAD
   - {fileID: 1202687227}
   - {fileID: 1126981148}
   - {fileID: 1027936491}
   - {fileID: 338152262}
+=======
+>>>>>>> parent of 726bddd (Added game manager script to handle collectibles, obstacles and UI)

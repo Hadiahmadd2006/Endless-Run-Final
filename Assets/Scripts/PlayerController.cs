@@ -27,9 +27,6 @@ public class PlayerController : MonoBehaviour
     private bool inJump = false;
     private bool leftGround = false;
     private float groundedTimer = 0f;
-    [Header("Interaction")]
-    public float interactionRadius = 0.6f;
-    public LayerMask interactionMask = ~0;
 
     [Header("Audio")]
     public AudioSource sfxSource;
@@ -137,8 +134,6 @@ public class PlayerController : MonoBehaviour
         {
             PlayRun();
         }
-
-        CheckInteractions();
     }
 
     void Jump()
@@ -191,7 +186,6 @@ public class PlayerController : MonoBehaviour
         rb.linearVelocity = Vector3.zero;
         TriggerAnim(dieTriggerName);
         PlaySfx(dieSfx);
-        GameManager.Instance?.OnPlayerDied();
     }
 
     public void PlaySfx(AudioClip clip)
