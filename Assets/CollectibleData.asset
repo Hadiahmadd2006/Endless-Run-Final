@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2022932edf2b9c44b8564a7d05dda597, type: 3}
   m_Name: CollectibleData
   m_EditorClassIdentifier: Assembly-CSharp::CollectibleData
-  prefab: {fileID: 2782168912210037986, guid: 8f8f2b7b9c237ea48bf8634b2c666205, type: 3}
+  prefab: {fileID: 919132149155446097, guid: 95f30c9a89d133247968c4552aef7858, type: 3}
   points: 5
   pickSfx: {fileID: 8300000, guid: 0e9edd79c97aef8449482eb5e00ee560, type: 3}
