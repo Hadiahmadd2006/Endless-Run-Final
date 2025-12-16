@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using TMPro;
 using UnityEngine;
 
@@ -31,6 +32,7 @@ public class GameManager : MonoBehaviour
 
     [Header("Debug/Flow")]
     public bool autoStart = true;
+    public float gameOverDelay = 2f;
 
     private float coinBonusEndTime;
     private int coinBonusPoints;
@@ -40,6 +42,9 @@ public class GameManager : MonoBehaviour
     private float runTimer;
     private Vector3 playerStartPos;
     private Quaternion playerStartRot;
+    private Coroutine gameOverCoroutine;
+
+    public bool IsGameplayActive => isRunning && !isPaused && !ended;
 
     void Awake()
     {
@@ -93,6 +98,11 @@ public class GameManager : MonoBehaviour
         if (gameOverPanel != null) gameOverPanel.SetActive(false);
         if (pauseMenuPanel != null) pauseMenuPanel.SetActive(false);
         if (hudPanel != null) hudPanel.SetActive(false);
+        if (gameOverCoroutine != null)
+        {
+            StopCoroutine(gameOverCoroutine);
+            gameOverCoroutine = null;
+        }
         UpdateTimerText();
     }
 
@@ -101,9 +111,8 @@ public class GameManager : MonoBehaviour
         if (ended) return;
         ended = true;
         isRunning = false;
-        ShowOnlyPanel(gameOverPanel);
-        if (finalScoreText != null) finalScoreText.text = $"Score: {Score}";
-        if (timeSurvivedText != null) timeSurvivedText.text = $"Time: {FormatTime(runTimer)}";
+        if (gameOverCoroutine != null) StopCoroutine(gameOverCoroutine);
+        gameOverCoroutine = StartCoroutine(ShowGameOverRoutine());
     }
 
     void UpdateScoreText()
@@ -112,6 +121,18 @@ public class GameManager : MonoBehaviour
         {
             scoreText.text = $"Score: {Score}";
         }
+    }
+
+    IEnumerator ShowGameOverRoutine()
+    {
+        float finalTime = runTimer;
+        float prevTimeScale = Time.timeScale;
+        Time.timeScale = 1f; // keep physics moving so the player can fall
+        yield return new WaitForSeconds(gameOverDelay);
+        ShowOnlyPanel(gameOverPanel);
+        Time.timeScale = 0f; // freeze once the panel is shown
+        if (finalScoreText != null) finalScoreText.text = $"Score: {Score}";
+        if (timeSurvivedText != null) timeSurvivedText.text = $"Time: {FormatTime(finalTime)}";
     }
 
     public bool IsCoinBonusActive => Time.time < coinBonusEndTime;

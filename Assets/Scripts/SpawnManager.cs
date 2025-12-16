@@ -61,6 +61,8 @@ public class SpawnManager : MonoBehaviour
     void Update()
     {
         if (player == null) return;
+        var gm = GameManager.Instance;
+        if (gm != null && !gm.IsGameplayActive) return;
 
         timer += Time.deltaTime;
         if (timer >= spawnInterval)

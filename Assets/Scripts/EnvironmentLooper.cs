@@ -34,6 +34,8 @@ public class EnvironmentLooper : MonoBehaviour
 
     void Update()
     {
+        var gm = GameManager.Instance;
+        if (gm != null && !gm.IsGameplayActive) return;
         if (player == null) return;
 
         // Move both segments toward +Z to simulate the player moving toward -Z.
