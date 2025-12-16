@@ -39,6 +39,31 @@ public class PlayerController : MonoBehaviour
     public AudioClip jumpSfx;
     public AudioClip dieSfx;
 
+    public void ResetState()
+    {
+        if (rb == null) rb = GetComponent<Rigidbody>();
+        if (anim == null) anim = GetComponent<Animator>();
+
+        isDead = false;
+        inJump = false;
+        canJump = true;
+        leftGround = false;
+        groundedTimer = 0f;
+        lane = 0;
+
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+
+        // Snap back to run state
+        if (anim != null && !string.IsNullOrEmpty(runStateName))
+        {
+            anim.Play(runStateName, 0, 0f);
+        }
+    }
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();

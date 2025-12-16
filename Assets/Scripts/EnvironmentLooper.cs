@@ -12,6 +12,14 @@ public class EnvironmentLooper : MonoBehaviour
     public float recycleBuffer = 420f;    // how far past the player the trailing edge must travel before recycling
 
     private float furthestZ;
+    private Vector3 initialPosA;
+    private Vector3 initialPosB;
+
+    void Awake()
+    {
+        if (segmentA != null) initialPosA = segmentA.position;
+        if (segmentB != null) initialPosB = segmentB.position;
+    }
 
     void Start()
     {
@@ -21,8 +29,7 @@ public class EnvironmentLooper : MonoBehaviour
             return;
         }
 
-        // Initialize furthestZ as the min (back-most) Z among the two
-        furthestZ = Mathf.Min(segmentA.position.z, segmentB.position.z);
+        ResetLoop();
     }
 
     void Update()
@@ -39,6 +46,18 @@ public class EnvironmentLooper : MonoBehaviour
 
         HandleSegment(segmentA);
         HandleSegment(segmentB);
+    }
+
+    public void ResetLoop()
+    {
+        if (segmentA != null) segmentA.position = initialPosA;
+        if (segmentB != null) segmentB.position = initialPosB;
+
+        // Initialize furthestZ as the min (back-most) Z among the two
+        if (segmentA != null && segmentB != null)
+        {
+            furthestZ = Mathf.Min(segmentA.position.z, segmentB.position.z);
+        }
     }
 
     void HandleSegment(Transform seg)

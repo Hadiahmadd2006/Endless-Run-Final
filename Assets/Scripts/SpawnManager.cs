@@ -39,6 +39,19 @@ public class SpawnManager : MonoBehaviour
     private float timer = 0f;
     private readonly List<Transform> spawned = new List<Transform>();
 
+    public void ResetSpawns()
+    {
+        timer = 0f;
+        for (int i = spawned.Count - 1; i >= 0; i--)
+        {
+            if (spawned[i] != null)
+            {
+                Destroy(spawned[i].gameObject);
+            }
+        }
+        spawned.Clear();
+    }
+
     void Reset()
     {
         playerController = FindObjectOfType<PlayerController>();

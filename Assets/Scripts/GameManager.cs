@@ -9,6 +9,8 @@ public class GameManager : MonoBehaviour
 
     [Header("Refs")]
     public PlayerController player;
+    public SpawnManager spawnManager;
+    public EnvironmentLooper environmentLooper;
 
     [Header("Score")]
     public TMP_Text scoreText;
@@ -48,6 +50,8 @@ public class GameManager : MonoBehaviour
         }
         Instance = this;
         DontDestroyOnLoad(gameObject);
+        if (spawnManager == null) spawnManager = FindObjectOfType<SpawnManager>();
+        if (environmentLooper == null) environmentLooper = FindObjectOfType<EnvironmentLooper>();
         CachePlayerStart();
         UpdateScoreText();
         if (autoStart)
@@ -133,12 +137,7 @@ public class GameManager : MonoBehaviour
         if (player == null) return;
         player.transform.position = playerStartPos;
         player.transform.rotation = playerStartRot;
-        var rb = player.GetComponent<Rigidbody>();
-        if (rb != null)
-        {
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
-        }
+        player.ResetState();
     }
 
     string FormatTime(float seconds)
@@ -167,11 +166,18 @@ public class GameManager : MonoBehaviour
     {
         ResetScore();
         ResetPlayerState();
+        ResetWorldState();
         runTimer = 0f;
         ended = false;
         isPaused = false;
         isRunning = true;
         ShowOnlyPanel(hudPanel);
+    }
+
+    void ResetWorldState()
+    {
+        spawnManager?.ResetSpawns();
+        environmentLooper?.ResetLoop();
     }
 
     public void ShowDescription(bool show)
@@ -214,11 +220,11 @@ public class GameManager : MonoBehaviour
 
     public void QuitGame()
     {
-#if UNITY_EDITOR
-        UnityEditor.EditorApplication.isPlaying = false;
-#else
-        Application.Quit();
-#endif
+        #if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+        #else
+            Application.Quit();
+        #endif
     }
 
     void ShowOnlyPanel(GameObject panelToShow)
