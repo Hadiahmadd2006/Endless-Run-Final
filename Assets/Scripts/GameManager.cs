@@ -18,6 +18,7 @@ public class GameManager : MonoBehaviour
 
     [Header("Timing")]
     public TMP_Text timeSurvivedText;
+    public TMP_Text hudTimerText;
 
     [Header("Menus")]
     public GameObject mainMenuPanel;
@@ -64,6 +65,7 @@ public class GameManager : MonoBehaviour
         if (isRunning && !isPaused && !ended)
         {
             runTimer += Time.deltaTime;
+            UpdateTimerText();
         }
     }
 
@@ -87,6 +89,7 @@ public class GameManager : MonoBehaviour
         if (gameOverPanel != null) gameOverPanel.SetActive(false);
         if (pauseMenuPanel != null) pauseMenuPanel.SetActive(false);
         if (hudPanel != null) hudPanel.SetActive(false);
+        UpdateTimerText();
     }
 
     public void OnPlayerDied()
@@ -142,6 +145,14 @@ public class GameManager : MonoBehaviour
     {
         TimeSpan t = TimeSpan.FromSeconds(Mathf.Max(0f, seconds));
         return $"{t.Minutes:00}:{t.Seconds:00}";
+    }
+
+    void UpdateTimerText()
+    {
+        if (hudTimerText != null)
+        {
+            hudTimerText.text = $"Time: {FormatTime(runTimer)}";
+        }
     }
 
     // ---- UI Hooks ----
@@ -203,7 +214,11 @@ public class GameManager : MonoBehaviour
 
     public void QuitGame()
     {
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
         Application.Quit();
+#endif
     }
 
     void ShowOnlyPanel(GameObject panelToShow)
