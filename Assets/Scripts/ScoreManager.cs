@@ -2,7 +2,6 @@ using UnityEngine;
 using System;
 using TMPro;
 
-// Compatibility shim forwarding to GameManager. Prefer using GameManager directly.
 [DefaultExecutionOrder(-99)]
 public class ScoreManager : MonoBehaviour
 {
@@ -31,7 +30,6 @@ public class ScoreManager : MonoBehaviour
             gameObject.AddComponent<GameManager>();
         }
 
-        // Preserve score text if assigned here.
         if (GameManager.Instance.scoreText == null && scoreText != null)
         {
             GameManager.Instance.scoreText = scoreText;

@@ -1,6 +1,5 @@
 using UnityEngine;
 
-// Simple follow cam like Subway Surfers: stays behind/above the player with a smooth damp.
 public class CameraFollow : MonoBehaviour
 {
     public Transform target;
@@ -13,7 +12,6 @@ public class CameraFollow : MonoBehaviour
     {
         if (target != null)
         {
-            // Use the starting relative position so the camera stays where you placed it.
             offset = transform.position - target.position;
         }
     }

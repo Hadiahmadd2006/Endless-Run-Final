@@ -20,7 +20,7 @@ public class PlayerController : MonoBehaviour
     private Animator anim;
     private CapsuleCollider col;
 
-    private int lane = 0;         // -1 left, 0 middle, +1 right
+    private int lane = 0;
     private float baseLaneX;
     private float baseY;
     private bool isDead = false;
@@ -32,7 +32,7 @@ public class PlayerController : MonoBehaviour
     public float interactionRadius = 0.6f;
     public LayerMask interactionMask = ~0;
     [Header("Tag Fallback")]
-    public int taggedCollectiblePoints = 1; // used if no Collectible component is found
+    public int taggedCollectiblePoints = 1;
 
     [Header("Audio")]
     public AudioSource sfxSource;
@@ -57,7 +57,6 @@ public class PlayerController : MonoBehaviour
             rb.angularVelocity = Vector3.zero;
         }
 
-        // Snap back to run state
         if (anim != null && !string.IsNullOrEmpty(runStateName))
         {
             anim.Play(runStateName, 0, 0f);
@@ -87,7 +86,6 @@ public class PlayerController : MonoBehaviour
     {
         if (isDead) return;
 
-        // Swap directions: A/Left moves right lane, D/Right moves left lane
         if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow))
             lane = Mathf.Clamp(lane + 1, -1, 1);
 
@@ -115,22 +113,19 @@ public class PlayerController : MonoBehaviour
             groundedTimer = 0f;
         }
 
-        // Lane movement
         float targetX = baseLaneX + lane * laneOffset;
         float xDelta = targetX - rb.position.x;
         float sideSpeed = xDelta * laneChangeSpeed;
 
         Vector3 velocity = rb.linearVelocity;
         velocity.x = sideSpeed;
-        velocity.z = 0f;          // world moves, player stays
+        velocity.z = 0f;
         if (grounded && velocity.y < 0f) velocity.y = 0f;
         rb.linearVelocity = velocity;
 
-        // Clamp Y
         Vector3 pos = rb.position;
         if (grounded && !inJump)
         {
-            // Hard lock to baseY and disable gravity while on the ground to prevent vertical hunting.
             pos.y = baseY;
             rb.position = pos;
             Vector3 v = rb.linearVelocity;
@@ -146,8 +141,6 @@ public class PlayerController : MonoBehaviour
             }
         }
 
-        // Landing
-        // End jump after grounded for 0.5s
         if (inJump && grounded && leftGround && groundedTimer >= 0.5f)
         {
             inJump = false;
@@ -160,7 +153,6 @@ public class PlayerController : MonoBehaviour
             canJump = true;
         }
 
-        // Keep run playing when not jumping
         if (!inJump && !isDead)
         {
             PlayRun();
@@ -176,7 +168,6 @@ public class PlayerController : MonoBehaviour
         canJump = false;
         TriggerAnim(jumpTriggerName);
         PlaySfx(jumpSfx);
-        // Force jump state immediately so the clip plays
         if (anim != null && !string.IsNullOrEmpty(jumpStateName))
         {
             anim.CrossFadeInFixedTime(jumpStateName, 0.01f);

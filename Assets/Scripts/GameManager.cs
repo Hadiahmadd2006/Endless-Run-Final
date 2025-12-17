@@ -127,10 +127,10 @@ public class GameManager : MonoBehaviour
     {
         float finalTime = runTimer;
         float prevTimeScale = Time.timeScale;
-        Time.timeScale = 1f; // keep physics moving so the player can fall
+        Time.timeScale = 1f;
         yield return new WaitForSeconds(gameOverDelay);
         ShowOnlyPanel(gameOverPanel);
-        Time.timeScale = 0f; // freeze once the panel is shown
+        Time.timeScale = 0f;
         if (finalScoreText != null) finalScoreText.text = $"Score: {Score}";
         if (timeSurvivedText != null) timeSurvivedText.text = $"Time: {FormatTime(finalTime)}";
     }
@@ -175,7 +175,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // ---- UI Hooks ----
     public void ShowMainMenu()
     {
         isRunning = false;

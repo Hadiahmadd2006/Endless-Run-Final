@@ -12,22 +12,22 @@ public class SpawnManager : MonoBehaviour
     public CollectibleData[] collectibles;
 
     [Header("Settings")]
-    public float spawnZ = 0f; // absolute Z where rows are spawned
+    public float spawnZ = 0f;
     public float spawnInterval = 1f;
     public float laneOffset = 2f;
-    public float yPos = 0.5f; // fallback height if ground not found
+    public float yPos = 0.5f;
     public float collectibleY = 1f;
     public float obstacleY = 0.2f;
     [Range(0f, 1f)] public float perLaneCollectibleChance = 0.4f;
     [Range(0f, 1f)] public float perLaneObstacleChance = 0.7f;
     [Header("Grounding")]
-    public bool useGrounding = false; // if false, use fixed Y values
+    public bool useGrounding = false;
     public LayerMask groundMask = ~0;
     public float raycastHeight = 5f;
     public float surfaceOffset = 0.1f;
     public bool parentToGround = false;
     [Range(0f, 1f)]
-    public float minGroundNormalY = 0.5f; // ignore hits on walls/steep slopes
+    public float minGroundNormalY = 0.5f;
     public bool alignToGroundNormal = true;
     public bool keepWorldScaleWhenParented = true;
     [Header("Motion")]
@@ -86,7 +86,7 @@ public class SpawnManager : MonoBehaviour
         for (int i = 0; i < lanes.Length; i++)
         {
             int laneIndex = lanes[i];
-            float laneX = laneIndex * laneOffset; // fixed lanes at -2, 0, +2 when laneOffset = 2
+            float laneX = laneIndex * laneOffset;
             Transform groundParent = null;
             bool hitFound = false;
             RaycastHit hit = default;
@@ -107,10 +107,8 @@ public class SpawnManager : MonoBehaviour
             bool tryCollectible = collectibles != null && collectibles.Length > 0 && Random.value < perLaneCollectibleChance;
             bool tryObstacle = obstacles != null && obstacles.Length > 0 && Random.value < perLaneObstacleChance;
 
-            // Prefer collectibles when both are requested half the time to add variety.
             if (tryCollectible && (!tryObstacle || Random.value < 0.5f))
             {
-                // Block side-by-side coins in the same row.
                 if (collectibleLanes.Contains(laneIndex - 1) || collectibleLanes.Contains(laneIndex + 1))
                 {
                     tryCollectible = false;
@@ -200,7 +198,6 @@ public class SpawnManager : MonoBehaviour
 
             t.position += dir * speed * Time.deltaTime;
 
-            // Cull once the object reaches the target Z or falls behind the player.
             if (t.position.z >= despawnAtZ)
             {
                 Destroy(t.gameObject);

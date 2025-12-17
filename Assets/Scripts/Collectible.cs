@@ -3,12 +3,11 @@ using UnityEngine;
 public class Collectible : MonoBehaviour
 {
     public CollectibleData data;
-    public AudioClip collectSfx; // optional override
-    public float rotationSpeed = 180f; // degrees per second, coins spin by default
+    public AudioClip collectSfx;
+    public float rotationSpeed = 180f;
 
     void Awake()
     {
-        // Ensure physics uses triggers so OnTriggerEnter fires reliably.
         var col = GetComponent<Collider>();
         if (col != null) col.isTrigger = true;
     }
@@ -23,7 +22,6 @@ public class Collectible : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
-        // Allow collider on child; look on parent chain.
         var player = other.GetComponentInParent<PlayerController>();
         if (player == null) return;
         HandleCollect(player);

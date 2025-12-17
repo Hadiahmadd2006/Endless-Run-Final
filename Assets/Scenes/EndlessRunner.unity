@@ -3239,6 +3239,7 @@ MonoBehaviour:
   gameOverPanel: {fileID: 36643944}
   hudPanel: {fileID: 333226251}
   autoStart: 0
+  gameOverDelay: 2
 --- !u!1 &1013205267
 GameObject:
   m_ObjectHideFlags: 0
